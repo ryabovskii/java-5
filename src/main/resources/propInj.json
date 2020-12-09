@@ -1,0 +1,4 @@
+{
+  "pack.SomeInterface" : "pack.SomeImpl",
+  "pack.SomeOtherInterface" : "pack.SODoer"
+}
