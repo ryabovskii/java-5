@@ -1,33 +1,44 @@
 package pack;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class Injector {
+
+    private static final String propertiesPatchString = "src/main/resources/propInj.json";
+
+    private String getFromProperties(String key) {
+        try {
+            String jsonString = new String(Files.readAllBytes(Path.of(propertiesPatchString)));
+            JSONObject json = new JSONObject(jsonString);
+            return json.get(key).toString();
+        } catch (Exception e) {
+            System.out.println("Cant get from properties\n" + e);
+            return null;
+        }
+    }
 
     public Object inject(@NotNull Object object) {
         Field[] fields = object.getClass().getDeclaredFields();
         for (Field field : fields) {
-            System.out.println(field.getType().getName());
             if (field.isAnnotationPresent(AutoInjectable.class)) {
                 field.setAccessible(true);
-                // TODO получить значение из json
-                String s1 = "pack.SomeInterface";
-                String s2 = "pack.SomeImpl";
-                String c2 = "pack.SODoer";
+                String key = field.getType().getName();
+                String value = getFromProperties(key);
+                if (value == null) {
+                    System.out.println("Cant inject");
+                    return null;
+                }
                 try {
-                    System.out.println("_" + Class.forName(s2).getName());
-                    //System.out.println(field.getType().getName());
-                    if (field.getType().getName().equals(s1)) {
-                        Constructor<?> constructor = Class.forName(s2).getConstructor();
-                        field.set(object, constructor.newInstance());
-                    } else {
-                        field.set(object, Class.forName(c2).getConstructor().newInstance());
-                    }
+                    Constructor<?> constructor = Class.forName(value).getConstructor();
+                    field.set(object, constructor.newInstance());
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.println("Cant inject" + e);
                 }
             }
         }
